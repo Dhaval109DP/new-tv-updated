@@ -171,8 +171,11 @@ export function AIRecommendations() {
 
     try {
       const input: ContentRecommendationsInput = { viewingHistory: trimmedHistory };
-      const result = await getContentRecommendations(input);
-      if (result && result.recommendations) {
+      const result = await getContentRecommendations(input) as any;
+      
+      if (result && result.error) {
+        throw new Error(result.error);
+      } else if (result && result.recommendations) {
         setRecommendations(result.recommendations);
         // Sync to other devices
         updateState({

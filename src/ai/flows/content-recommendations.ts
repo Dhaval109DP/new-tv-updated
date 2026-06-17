@@ -48,8 +48,13 @@ export type ContentRecommendationsOutput = z.infer<
 
 export async function getContentRecommendations(
   input: ContentRecommendationsInput
-): Promise<ContentRecommendationsOutput> {
-  return contentRecommendationsFlow(input);
+): Promise<ContentRecommendationsOutput | { error: string }> {
+  try {
+    return await contentRecommendationsFlow(input);
+  } catch (error: any) {
+    console.error("Genkit Flow Error:", error);
+    return { error: error.message || "Failed to generate recommendations" };
+  }
 }
 
 const prompt = ai.definePrompt({

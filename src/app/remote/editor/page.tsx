@@ -354,9 +354,11 @@ function EditorContent() {
 
                     try {
                       const input: { viewingHistory: string } = { viewingHistory: history };
-                      const result = await getContentRecommendations(input);
+                      const result = await getContentRecommendations(input) as any;
                       
-                      if (result && result.recommendations) {
+                      if (result && result.error) {
+                        toast({ variant: 'destructive', title: "API Error", description: result.error });
+                      } else if (result && result.recommendations) {
                         updateState({
                           aiData: {
                             history,
