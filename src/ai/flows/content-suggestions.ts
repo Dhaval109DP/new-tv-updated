@@ -1,5 +1,4 @@
 'use server';
-export const maxDuration = 60;
 /**
  * @fileOverview An AI agent that provides auto-suggestions for movie and show titles.
  *
