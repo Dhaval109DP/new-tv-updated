@@ -96,7 +96,7 @@ export function AIRecommendations() {
 
     const debounceTimer = setTimeout(() => {
       fetchSuggestions();
-    }, 300); // 300ms debounce
+    }, 1000); // 1000ms debounce to prevent API rate limits
 
     return () => clearTimeout(debounceTimer);
   }, [currentQuery]);
