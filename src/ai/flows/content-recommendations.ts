@@ -50,7 +50,8 @@ export async function getContentRecommendations(
   input: ContentRecommendationsInput
 ): Promise<ContentRecommendationsOutput | { error: string }> {
   try {
-    return await contentRecommendationsFlow(input);
+    const result = await contentRecommendationsFlow(input);
+    return JSON.parse(JSON.stringify(result));
   } catch (error: any) {
     console.error("Genkit Flow Error:", error);
     return { error: error.message || "Failed to generate recommendations" };

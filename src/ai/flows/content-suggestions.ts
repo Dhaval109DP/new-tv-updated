@@ -33,8 +33,15 @@ export type ContentSuggestionsOutput = z.infer<
 
 export async function getContentSuggestions(
   input: ContentSuggestionsInput
-): Promise<ContentSuggestionsOutput> {
-  return contentSuggestionsFlow(input);
+): Promise<ContentSuggestionsOutput | { error: string }> {
+  try {
+    const result = await contentSuggestionsFlow(input);
+    // Force plain JSON to avoid Next.js Server Action serialization errors
+    return JSON.parse(JSON.stringify(result));
+  } catch (error: any) {
+    console.error("Genkit Suggestions Error:", error);
+    return { error: error.message || "Failed to generate suggestions" };
+  }
 }
 
 const prompt = ai.definePrompt({

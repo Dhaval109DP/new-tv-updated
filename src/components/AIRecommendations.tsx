@@ -74,8 +74,11 @@ export function AIRecommendations() {
     const fetchSuggestions = async () => {
       setIsSuggestionsLoading(true);
       try {
-        const result = await getContentSuggestions({ query: currentQuery });
-        if (result && result.suggestions.length > 0) {
+        const result = await getContentSuggestions({ query: currentQuery }) as any;
+        
+        if (result && result.error) {
+          throw new Error(result.error);
+        } else if (result && result.suggestions && result.suggestions.length > 0) {
           setSuggestions(result.suggestions);
           setPopoverOpen(true);
         } else {
