@@ -66,87 +66,115 @@ export function DashboardProvider({
     }
   }, [deviceType, pairCode]);
 
-  // Connect to PartyKit room using the pair code
-  const socket = usePartySocket({
-    // Proxies through Next.js rewrites to avoid local network binding issues
-    host: process.env.NEXT_PUBLIC_PARTYKIT_HOST || (typeof window !== 'undefined' ? window.location.host : '127.0.0.1:3000'),
-    room: pairCode || 'default', // Only connect if we have a room
-    startClosed: !pairCode, // Don't connect until we have a pair code
-    onOpen() {
-      setIsOnline(true);
-      if (deviceType === 'tv') {
-        toast({ title: "Sync Active", description: "Ready to pair with phone.", duration: 3000 });
-      }
-      // When TV connects, broadcast its state so phones get it immediately
-      if (deviceType === 'tv') {
-        const msg: SyncMessage = { type: 'init', state, device: 'tv' };
-        socket.send(JSON.stringify(msg));
-      } else {
-        // Phone connecting, ask for state
-        const msg: SyncMessage = { type: 'join', device: 'phone' };
-        socket.send(JSON.stringify(msg));
-      }
-    },
-    onClose() {
-      setIsOnline(false);
-    },
-    onMessage(event) {
-      try {
-        const msg = JSON.parse(event.data) as SyncMessage;
-        
-        switch (msg.type) {
-          case 'init':
-          case 'sync':
-            // Received full state
-            setState(msg.state);
-            if (deviceType === 'tv') saveState(msg.state);
-            break;
-            
-          case 'update':
-            // Received partial update
-            if (msg.timestamp > state.lastModified) {
-              setState(prev => {
-                const newState = { ...prev, ...msg.patch, lastModified: msg.timestamp };
-                if (deviceType === 'tv') saveState(newState);
-                return newState;
-              });
-            }
-            break;
-            
-          case 'join':
-            // Someone joined, if we're TV, send them our state
-            if (deviceType === 'tv') {
-              toast({ title: "Phone Connected", description: "Your phone is now syncing.", duration: 3000 });
-              const reply: SyncMessage = { type: 'sync', state };
-              socket.send(JSON.stringify(reply));
-            }
-            break;
+  const socketRef = React.useRef<WebSocket | null>(null);
 
-          case 'open_url':
-            // TV automatically opens casted URLs
-            if (deviceType === 'tv') {
-              toast({ title: "Opening Link", description: "Opening link from phone...", duration: 3000 });
-              window.open(msg.url, '_blank');
-            }
-            break;
-        }
-      } catch (err) {
-        console.error('Failed to parse sync message', err);
-      }
-    }
-  });
-
-  // Reconnect when pair code changes
+  // Connect to the new Render WebSocket server
   useEffect(() => {
-    if (pairCode) {
-      socket.reconnect();
-    }
-  }, [pairCode, socket]);
+    if (!pairCode) return;
+
+    let ws: WebSocket | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout>;
+    let isComponentMounted = true;
+
+    const connect = () => {
+      // Determine WebSocket URL
+      // If NEXT_PUBLIC_SYNC_HOST is provided, use it. Otherwise use localhost:1999
+      const host = process.env.NEXT_PUBLIC_SYNC_HOST || 'localhost:1999';
+      // Use wss:// for https (Netlify/Render), ws:// for localhost
+      const protocol = host.includes('localhost') || host.includes('127.0.0.1') ? 'ws://' : 'wss://';
+      const wsUrl = `${protocol}${host}/?room=${pairCode}`;
+
+      ws = new WebSocket(wsUrl);
+      socketRef.current = ws;
+
+      ws.onopen = () => {
+        if (!isComponentMounted) return;
+        setIsOnline(true);
+        if (deviceType === 'tv') {
+          toast({ title: "Sync Active", description: "Ready to pair with phone.", duration: 3000 });
+          // Broadcast state to phones
+          const msg: SyncMessage = { type: 'init', state, device: 'tv' };
+          ws?.send(JSON.stringify(msg));
+        } else {
+          // Phone connecting, ask for state
+          const msg: SyncMessage = { type: 'join', device: 'phone' };
+          ws?.send(JSON.stringify(msg));
+        }
+      };
+
+      ws.onclose = () => {
+        if (!isComponentMounted) return;
+        setIsOnline(false);
+        socketRef.current = null;
+        // Attempt to reconnect after 2 seconds
+        reconnectTimer = setTimeout(connect, 2000);
+      };
+
+      ws.onerror = (err) => {
+        console.error("WebSocket error:", err);
+        ws?.close(); // Force close to trigger reconnect
+      };
+
+      ws.onmessage = (event) => {
+        if (!isComponentMounted) return;
+        try {
+          const msg = JSON.parse(event.data) as SyncMessage;
+          
+          switch (msg.type) {
+            case 'init':
+            case 'sync':
+              setState(msg.state);
+              if (deviceType === 'tv') saveState(msg.state);
+              break;
+              
+            case 'update':
+              if (msg.timestamp > state.lastModified) {
+                setState(prev => {
+                  const newState = { ...prev, ...msg.patch, lastModified: msg.timestamp };
+                  if (deviceType === 'tv') saveState(newState);
+                  return newState;
+                });
+              }
+              break;
+              
+            case 'join':
+              if (deviceType === 'tv') {
+                toast({ title: "Phone Connected", description: "Your phone is now syncing.", duration: 3000 });
+                const reply: SyncMessage = { type: 'sync', state };
+                ws?.send(JSON.stringify(reply));
+              }
+              break;
+
+            case 'open_url':
+              if (deviceType === 'tv') {
+                toast({ title: "Opening Link", description: "Opening link from phone...", duration: 3000 });
+                window.open(msg.url, '_blank');
+              }
+              break;
+          }
+        } catch (err) {
+          console.error('Failed to parse sync message', err);
+        }
+      };
+    };
+
+    connect();
+
+    // Cleanup on unmount or pairCode change
+    return () => {
+      isComponentMounted = false;
+      clearTimeout(reconnectTimer);
+      if (ws) {
+        ws.close();
+      }
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pairCode, deviceType]); // Only re-run if pairCode or deviceType changes
 
   // Function to broadcast raw messages (like open_url)
   const broadcastMessage = (msg: SyncMessage) => {
-    if (isOnline && pairCode) {
-      socket.send(JSON.stringify(msg));
+    if (isOnline && pairCode && socketRef.current?.readyState === 1) {
+      socketRef.current.send(JSON.stringify(msg));
     }
   };
 
@@ -167,9 +195,9 @@ export function DashboardProvider({
     });
 
     // Broadcast if online
-    if (isOnline && pairCode) {
+    if (isOnline && pairCode && socketRef.current?.readyState === 1) {
       const msg: SyncMessage = { type: 'update', patch, timestamp };
-      socket.send(JSON.stringify(msg));
+      socketRef.current.send(JSON.stringify(msg));
     }
   };
 
