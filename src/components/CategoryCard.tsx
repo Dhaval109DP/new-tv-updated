@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 
 interface ContentLink {
   title: string;
+  url?: string;
 }
 
 interface CategoryCardProps {
@@ -62,7 +63,7 @@ export function CategoryCard({ icon: Icon, title, link, platform, logo, featured
                   {featuredContent.map((content) => (
                     <li key={content.title}>
                       <Link
-                        href={generateLink(content.title)}
+                        href={content.url ? content.url : generateLink(content.title)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="block group/sublink text-foreground hover:text-primary transition-colors text-base tv:text-lg"

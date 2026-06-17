@@ -117,8 +117,12 @@ function EditorContent() {
                           }
                         ]
                       });
+                      
+                      // Also broadcast the URL to open immediately on the TV
+                      broadcastMessage({ type: 'open_url', url: finalUrl });
+                      
                       input.value = '';
-                      toast({ title: 'Sent!', description: 'Link sent to TV.' });
+                      toast({ title: 'Sent!', description: 'Link opened on TV.' });
                     }
                   }}
                 >
@@ -196,17 +200,53 @@ function EditorContent() {
                     </div>
                     
                     {isVisible && (
-                      <div className="space-y-2">
-                        <p className="text-xs font-semibold uppercase text-muted-foreground">Featured Items (Comma separated)</p>
-                        <Input 
-                          placeholder="e.g. Kalki, Munjya, Mr. & Mrs. Mahi"
-                          defaultValue={override?.customFeaturedContent?.map(c => c.title).join(', ') || ''}
-                          onBlur={(e) => {
-                            const val = e.target.value.trim();
-                            const newContent = val 
-                              ? val.split(',').map(t => ({ title: t.trim() }))
-                              : undefined; // Clear to default if empty
-                              
+                      <div className="space-y-3 mt-4">
+                        <p className="text-xs font-semibold uppercase text-muted-foreground">Featured Items</p>
+                        
+                        <div className="space-y-2">
+                          {(override?.customFeaturedContent || []).map((item, idx) => (
+                            <div key={idx} className="flex items-center justify-between bg-muted/50 p-2 rounded-md border border-border">
+                              <div className="overflow-hidden">
+                                <p className="font-semibold text-sm truncate">{item.title}</p>
+                                {item.url && <p className="text-xs text-muted-foreground truncate">{item.url}</p>}
+                              </div>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-destructive h-8 px-2"
+                                onClick={() => {
+                                  const newContent = [...(override?.customFeaturedContent || [])];
+                                  newContent.splice(idx, 1);
+                                  updateState({
+                                    categoryOverrides: {
+                                      ...state.categoryOverrides,
+                                      [title]: {
+                                        ...override,
+                                        visible: isVisible,
+                                        customFeaturedContent: newContent.length > 0 ? newContent : undefined
+                                      }
+                                    }
+                                  });
+                                }}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="w-full gap-2"
+                          onClick={() => {
+                            const newTitle = prompt(`Enter movie/show title for ${title}:`);
+                            if (!newTitle) return;
+                            const newUrl = prompt(`(Optional) Enter direct URL for ${newTitle}:`);
+                            
+                            const newContent = [...(override?.customFeaturedContent || [])];
+                            newContent.push({ title: newTitle.trim(), url: newUrl ? newUrl.trim() : undefined });
+                            
                             updateState({
                               categoryOverrides: {
                                 ...state.categoryOverrides,
@@ -217,9 +257,10 @@ function EditorContent() {
                                 }
                               }
                             });
-                            toast({ title: 'Saved', description: `Updated ${title} featured content.` });
                           }}
-                        />
+                        >
+                          <Plus className="w-4 h-4" /> Add Item
+                        </Button>
                       </div>
                     )}
                   </div>
@@ -323,7 +364,7 @@ function EditorContent() {
                             timestamp: Date.now()
                           }
                         });
-                        toast({ title: "Success", description: "Recommendations pushed to TV!" });
+                        toast({ title: "Success", description: "Recommendations ready to cast!" });
                       }
                     } catch (e) {
                       console.error(e);
@@ -344,6 +385,62 @@ function EditorContent() {
                   }}>Save Search</Button>
                 </div>
              </div>
+
+             {/* Display AI Results on Phone */}
+             {(state.aiData?.results || []).length > 0 && (
+               <div className="space-y-3 pt-4 border-t border-border">
+                 <h3 className="text-lg font-headline font-bold">Results</h3>
+                 <div className="flex flex-col gap-3">
+                   {state.aiData!.results.map((rec, idx) => {
+                     const platformLinkGenerators: {[key: string]: (title: string) => string} = {
+                       'Desi Cinemas': (title: string) => `https://desicinemas.to/movies/${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}/`,
+                       'Bollyzone': (title: string) => `https://www.bollyzone.to/category/${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}/`,
+                       'Play Desi!': (title: string) => `https://playdesi.info/series/${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}/`,
+                       'Dailymotion': (title: string) => `https://www.dailymotion.com/search/${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+                       'T-Flix': () => `https://tv.tflix.app/`,
+                     };
+                     const generateLink = platformLinkGenerators[rec.platform] || ((t: string) => `https://google.com/search?q=${encodeURIComponent(t)}`);
+                     
+                     return (
+                       <div key={idx} className="p-3 border border-border bg-card rounded-lg flex flex-col gap-2">
+                         <div>
+                           <h4 className="font-bold text-base">{rec.title}</h4>
+                           <p className="text-xs text-muted-foreground mt-1">{rec.reason}</p>
+                           <span className="inline-block mt-1 px-2 py-0.5 bg-primary/20 text-primary text-[10px] uppercase font-bold rounded">
+                             {rec.platform}
+                           </span>
+                         </div>
+                         <Button 
+                           size="sm" 
+                           variant="outline" 
+                           className="w-full mt-1"
+                           onClick={() => {
+                             const url = generateLink(rec.title);
+                             broadcastMessage({ type: 'open_url', url });
+                             
+                             updateState({
+                               castedLinks: [
+                                 ...(state.castedLinks || []),
+                                 {
+                                   id: Date.now().toString(),
+                                   url,
+                                   title: rec.title,
+                                   sentAt: Date.now(),
+                                   bookmarked: false
+                                 }
+                               ]
+                             });
+                             toast({ title: 'Casted!', description: `Opening ${rec.title} on TV.` });
+                           }}
+                         >
+                           Cast to TV
+                         </Button>
+                       </div>
+                     );
+                   })}
+                 </div>
+               </div>
+             )}
 
              {/* Show TV's saved searches on phone */}
              {(state.savedSearches || []).length > 0 && (

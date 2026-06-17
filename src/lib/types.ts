@@ -58,7 +58,7 @@ export interface CustomCategory {
   platform: string;
   link: string;
   icon: string; // string identifier for icon
-  featuredContent: { title: string }[];
+  featuredContent: { title: string; url?: string }[];
   gradient: string;
   visible: boolean;
   order: number;
@@ -135,7 +135,7 @@ export interface Announcement {
 
 export interface CategoryOverride {
   visible: boolean;
-  customFeaturedContent?: { title: string }[];
+  customFeaturedContent?: { title: string; url?: string }[];
 }
 
 export interface TrendingShow {
