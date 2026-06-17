@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { getContentRecommendations, ContentRecommendationsInput, ContentRecommendationsOutput } from '@/ai/flows/content-recommendations';
-import { getContentSuggestions } from '@/ai/flows/content-suggestions';
+import { searchLocalContent } from '@/lib/content-database';
 import { Popover, PopoverContent, PopoverAnchor } from '@/components/ui/popover';
 import { Wand2, LoaderCircle, AlertTriangle, Play, Film, Tv, ListVideo, Video, Bookmark, Trash2, Trophy } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -33,12 +33,14 @@ export function AIRecommendations() {
     }
   }, [state.aiData]);
 
-  // State for auto-suggestions
+  // State for auto-suggestions (100% local, zero API calls)
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [currentQuery, setCurrentQuery] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // In-memory cache for AI recommendations to avoid duplicate API calls
+  const cacheRef = useRef<Map<string, ContentRecommendationsOutput['recommendations']>>(new Map());
 
   const savedSearches = state.savedSearches || [];
 
@@ -58,6 +60,7 @@ export function AIRecommendations() {
     { title: "IPL Final - CSK vs MI", link: "https://tv.tflix.app/" },
   ];
 
+  // Local auto-suggestions — instant, no API calls!
   useEffect(() => {
     if (currentQuery.toLowerCase().trim() === 'live') {
       setSuggestions(liveMatches.map(m => m.title));
@@ -71,34 +74,15 @@ export function AIRecommendations() {
       return;
     }
 
-    const fetchSuggestions = async () => {
-      setIsSuggestionsLoading(true);
-      try {
-        const result = await getContentSuggestions({ query: currentQuery }) as any;
-        
-        if (result && result.error) {
-          throw new Error(result.error);
-        } else if (result && result.suggestions && result.suggestions.length > 0) {
-          setSuggestions(result.suggestions);
-          setPopoverOpen(true);
-        } else {
-          setSuggestions([]);
-          setPopoverOpen(false);
-        }
-      } catch (err) {
-        console.error("Failed to fetch suggestions:", err);
-        setSuggestions([]);
-        setPopoverOpen(false);
-      } finally {
-        setIsSuggestionsLoading(false);
-      }
-    };
-
-    const debounceTimer = setTimeout(() => {
-      fetchSuggestions();
-    }, 1000); // 1000ms debounce to prevent API rate limits
-
-    return () => clearTimeout(debounceTimer);
+    // Use local database instead of AI — zero API calls
+    const results = searchLocalContent(currentQuery);
+    if (results.length > 0) {
+      setSuggestions(results);
+      setPopoverOpen(true);
+    } else {
+      setSuggestions([]);
+      setPopoverOpen(false);
+    }
   }, [currentQuery]);
 
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -173,12 +157,31 @@ export function AIRecommendations() {
     setRecommendations([]);
 
     try {
+      // Check cache first to avoid duplicate API calls
+      const cacheKey = trimmedHistory.toLowerCase();
+      const cached = cacheRef.current.get(cacheKey);
+      if (cached) {
+        setRecommendations(cached);
+        updateState({
+          aiData: {
+            history: trimmedHistory,
+            results: cached,
+            timestamp: Date.now()
+          }
+        });
+        toast({ title: 'From Cache', description: 'Loaded cached recommendations (no API used).' });
+        setIsLoading(false);
+        return;
+      }
+
       const input: ContentRecommendationsInput = { viewingHistory: trimmedHistory };
       const result = await getContentRecommendations(input) as any;
       
       if (result && result.error) {
         throw new Error(result.error);
       } else if (result && result.recommendations) {
+        // Store in cache for future use
+        cacheRef.current.set(cacheKey, result.recommendations);
         setRecommendations(result.recommendations);
         // Sync to other devices
         updateState({
@@ -241,13 +244,7 @@ export function AIRecommendations() {
                     align="start"
                     onOpenAutoFocus={(e) => e.preventDefault()} // prevent stealing focus from textarea
                 >
-                    {isSuggestionsLoading ? (
-                        <div className="p-2 text-sm text-muted-foreground flex items-center gap-2">
-                            <LoaderCircle className="h-4 w-4 animate-spin" />
-                            <span>Loading suggestions...</span>
-                        </div>
-                    ) : (
-                        <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-1">
                             {suggestions.map((suggestion, index) => (
                                 <Button
                                     key={index}
@@ -259,7 +256,6 @@ export function AIRecommendations() {
                                 </Button>
                             ))}
                         </div>
-                    )}
                 </PopoverContent>
               </Popover>
               <div className="flex flex-wrap items-center gap-4">
