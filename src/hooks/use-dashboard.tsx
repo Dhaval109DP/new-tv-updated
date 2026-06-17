@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import usePartySocket from 'partysocket/react';
+
 import { 
   DashboardState, 
   SyncMessage, 
