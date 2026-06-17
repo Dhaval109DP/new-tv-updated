@@ -163,15 +163,28 @@ export interface DashboardSettings {
   widgetOrder: string[];
 }
 
-// --- Sync Messages (PartyKit protocol) ---
+// --- Connected Devices ---
+
+export interface ConnectedDevice {
+  id: string;
+  name: string;
+  color: string;
+  connectedAt: number;
+}
+
+// Device color palette for up to 6 phones
+export const DEVICE_COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#a855f7', '#ec4899'];
+
+// --- Sync Messages ---
 
 export type SyncMessage =
   | { type: 'init'; state: DashboardState; device: DeviceType }
-  | { type: 'join'; device: DeviceType }
+  | { type: 'join'; device: DeviceType; deviceId?: string; deviceName?: string }
   | { type: 'update'; patch: Partial<DashboardState>; timestamp: number }
   | { type: 'sync'; state: DashboardState }
   | { type: 'device_connected'; device: DeviceType }
   | { type: 'device_disconnected'; device: DeviceType }
+  | { type: 'device_list'; devices: ConnectedDevice[] }
   | { type: 'open_url'; url: string }
   | { type: 'request_state' }
   | { type: 'ping' }

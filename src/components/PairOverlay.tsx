@@ -3,7 +3,7 @@
 import { useDashboard } from '@/hooks/use-dashboard';
 import { QRCodeSVG } from 'qrcode.react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog';
-import { LoaderCircle } from 'lucide-react';
+import { LoaderCircle, Smartphone } from 'lucide-react';
 import { useEffect } from 'react';
 
 interface PairOverlayProps {
@@ -12,7 +12,7 @@ interface PairOverlayProps {
 }
 
 export function PairOverlay({ open, onOpenChange }: PairOverlayProps) {
-  const { pairCode, isOnline } = useDashboard();
+  const { pairCode, isOnline, connectedDevices } = useDashboard();
 
   // Construct the URL for the phone to scan
   const remoteUrl = typeof window !== 'undefined' 
@@ -54,20 +54,42 @@ export function PairOverlay({ open, onOpenChange }: PairOverlayProps) {
             )}
           </div>
 
-          {/* Status */}
-          <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-            {!isOnline ? (
-              <>
-                <LoaderCircle className="w-4 h-4 animate-spin text-yellow-500" />
-                <span>Connecting to sync server...</span>
-              </>
-            ) : (
-              <>
-                <LoaderCircle className="w-4 h-4 animate-spin text-primary" />
-                <span>Waiting for phone to connect...</span>
-              </>
-            )}
-          </div>
+          {/* Connected Devices */}
+          {connectedDevices.length > 0 ? (
+            <div className="w-full space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground text-center">
+                Connected Devices ({connectedDevices.length})
+              </p>
+              <div className="flex flex-wrap justify-center gap-2">
+                {connectedDevices.map((device) => (
+                  <div
+                    key={device.id}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-full border"
+                    style={{ borderColor: device.color, backgroundColor: `${device.color}15` }}
+                  >
+                    <Smartphone className="w-3.5 h-3.5" style={{ color: device.color }} />
+                    <span className="text-sm font-medium" style={{ color: device.color }}>
+                      {device.name}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+              {!isOnline ? (
+                <>
+                  <LoaderCircle className="w-4 h-4 animate-spin text-yellow-500" />
+                  <span>Connecting to sync server...</span>
+                </>
+              ) : (
+                <>
+                  <LoaderCircle className="w-4 h-4 animate-spin text-primary" />
+                  <span>Waiting for phone to connect...</span>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

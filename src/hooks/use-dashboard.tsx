@@ -6,7 +6,8 @@ import {
   DashboardState, 
   SyncMessage, 
   DEFAULT_DASHBOARD_STATE, 
-  DeviceType 
+  DeviceType,
+  ConnectedDevice
 } from '@/lib/types';
 import { loadState, saveState } from '@/lib/store';
 import { useToast } from './use-toast';
@@ -19,6 +20,10 @@ interface DashboardContextType {
   setPairCode: (code: string | null) => void;
   deviceType: DeviceType;
   broadcastMessage: (msg: SyncMessage) => void;
+  connectedDevices: ConnectedDevice[];
+  myDeviceId: string | null;
+  myDeviceName: string | null;
+  myDeviceColor: string | null;
 }
 
 const DashboardContext = createContext<DashboardContextType | null>(null);
@@ -38,6 +43,21 @@ export function DashboardProvider({
     }
     return null;
   });
+  const [connectedDevices, setConnectedDevices] = useState<ConnectedDevice[]>([]);
+  const [myDeviceId, setMyDeviceId] = useState<string | null>(() => {
+    if (typeof window !== 'undefined' && deviceType === 'phone') {
+      // Persist device ID so reconnects keep identity
+      let id = localStorage.getItem('dashboard_device_id');
+      if (!id) {
+        id = `phone-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+        localStorage.setItem('dashboard_device_id', id);
+      }
+      return id;
+    }
+    return deviceType === 'tv' ? 'tv' : null;
+  });
+  const [myDeviceName, setMyDeviceName] = useState<string | null>(null);
+  const [myDeviceColor, setMyDeviceColor] = useState<string | null>(null);
   const { toast } = useToast();
 
   const setPairCode = (code: string | null) => {
@@ -91,13 +111,13 @@ export function DashboardProvider({
         if (!isComponentMounted) return;
         setIsOnline(true);
         if (deviceType === 'tv') {
-          toast({ title: "Sync Active", description: "Ready to pair with phone.", duration: 3000 });
+          toast({ title: "Sync Active", description: "Ready to pair with phones.", duration: 3000 });
           // Broadcast state to phones
           const msg: SyncMessage = { type: 'init', state, device: 'tv' };
           ws?.send(JSON.stringify(msg));
         } else {
-          // Phone connecting, ask for state
-          const msg: SyncMessage = { type: 'join', device: 'phone' };
+          // Phone connecting, send join with device identity
+          const msg: SyncMessage = { type: 'join', device: 'phone', deviceId: myDeviceId || undefined };
           ws?.send(JSON.stringify(msg));
         }
       };
@@ -118,7 +138,7 @@ export function DashboardProvider({
       ws.onmessage = (event) => {
         if (!isComponentMounted) return;
         try {
-          const msg = JSON.parse(event.data) as SyncMessage;
+          const msg = JSON.parse(event.data) as any;
           
           switch (msg.type) {
             case 'init':
@@ -139,10 +159,25 @@ export function DashboardProvider({
               
             case 'join':
               if (deviceType === 'tv') {
-                toast({ title: "Phone Connected", description: "Your phone is now syncing.", duration: 3000 });
+                const phoneName = msg.deviceName || 'Phone';
+                toast({ title: `${phoneName} Connected`, description: "A phone is now syncing.", duration: 3000 });
                 const reply: SyncMessage = { type: 'sync', state };
                 ws?.send(JSON.stringify(reply));
               }
+              break;
+
+            case 'device_assigned':
+              // Server tells this phone its assigned identity
+              if (deviceType === 'phone') {
+                setMyDeviceId(msg.deviceId);
+                setMyDeviceName(msg.deviceName);
+                setMyDeviceColor(msg.color);
+              }
+              break;
+
+            case 'device_list':
+              // Server broadcasts the full list of connected phones
+              setConnectedDevices(msg.devices || []);
               break;
 
             case 'open_url':
@@ -203,7 +238,7 @@ export function DashboardProvider({
 
   return (
     <DashboardContext.Provider 
-      value={{ state, updateState, isOnline, pairCode, setPairCode, deviceType, broadcastMessage }}
+      value={{ state, updateState, isOnline, pairCode, setPairCode, deviceType, broadcastMessage, connectedDevices, myDeviceId, myDeviceName, myDeviceColor }}
     >
       {children}
     </DashboardContext.Provider>

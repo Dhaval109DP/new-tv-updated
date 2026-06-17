@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useDashboard, DashboardProvider } from '@/hooks/use-dashboard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LoaderCircle, SmartphoneNfc, Plus, Trash2 } from 'lucide-react';
+import { LoaderCircle, SmartphoneNfc, Plus, Trash2, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -16,7 +16,7 @@ import { getContentRecommendations } from '@/ai/flows/content-recommendations';
 import { useToast } from '@/hooks/use-toast';
 
 function EditorContent() {
-  const { pairCode, setPairCode, isOnline, state, updateState, broadcastMessage } = useDashboard();
+  const { pairCode, setPairCode, isOnline, state, updateState, broadcastMessage, myDeviceName, myDeviceColor, connectedDevices } = useDashboard();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isInitializing, setIsInitializing] = useState(true);
@@ -45,7 +45,18 @@ function EditorContent() {
       {/* Header */}
       <header className="sticky top-0 z-50 bg-card border-b border-border p-4 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-headline font-bold">Remote Control</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-headline font-bold">Remote Control</h1>
+            {myDeviceName && myDeviceColor && (
+              <span 
+                className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold border"
+                style={{ borderColor: myDeviceColor, color: myDeviceColor, backgroundColor: `${myDeviceColor}15` }}
+              >
+                <Smartphone className="w-3 h-3" />
+                {myDeviceName}
+              </span>
+            )}
+          </div>
           <div className="flex items-center text-xs text-muted-foreground mt-1">
             {isOnline ? (
               <span className="flex items-center text-green-500">
@@ -60,6 +71,12 @@ function EditorContent() {
             )}
             <span className="mx-2">•</span>
             <span className="font-mono">Room: {pairCode}</span>
+            {connectedDevices.length > 1 && (
+              <>
+                <span className="mx-2">•</span>
+                <span>{connectedDevices.length} phones</span>
+              </>
+            )}
           </div>
         </div>
         <Button variant="ghost" size="sm" onClick={() => {
