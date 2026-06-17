@@ -1,5 +1,5 @@
 'use server';
-
+export const maxDuration = 60;
 /**
  * @fileOverview An AI agent that provides personalized content recommendations based on viewing history.
  *
