@@ -7,6 +7,7 @@ import { RefreshCw } from 'lucide-react';
 import { SyncStatus } from './SyncStatus';
 import { PairOverlay } from './PairOverlay';
 import { useState } from 'react';
+import { SearchBar } from './SearchBar';
 
 export function AppHeader() {
   const [showPairOverlay, setShowPairOverlay] = useState(false);
@@ -26,6 +27,7 @@ export function AppHeader() {
                   <Link href="/watching">Now Watching</Link>
               </Button>
           </nav>
+          <SearchBar />
         <div className="flex items-center gap-4">
           <SyncStatus onPairClick={() => setShowPairOverlay(true)} />
           <Button

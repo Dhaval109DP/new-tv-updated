@@ -187,16 +187,28 @@ function EditorContent() {
           <TabsContent value="categories" className="space-y-8">
             {/* Default Categories */}
             <div className="space-y-4">
-              <h3 className="text-lg font-headline font-bold">Default Categories (Overrides)</h3>
-              <p className="text-sm text-muted-foreground">Change the featured content for the built-in categories.</p>
+              <h3 className="text-lg font-headline font-bold">Category Cards & Website Links</h3>
+              <p className="text-sm text-muted-foreground">Change target website URLs, platform names, or featured content for built-in categories.</p>
               {['Movies', 'TV Shows', 'Web Series', 'Videos', 'Sports'].map(title => {
                 const override = state.categoryOverrides?.[title];
                 const isVisible = override?.visible !== false;
+                const defaultLinks: Record<string, { link: string; platform: string }> = {
+                  'Movies': { link: 'https://desicinemas.to/', platform: 'Desi Cinemas' },
+                  'TV Shows': { link: 'https://www.bollyzone.to/', platform: 'Bollyzone' },
+                  'Web Series': { link: 'https://playdesi.info/', platform: 'PlayDesi!' },
+                  'Videos': { link: 'https://www.dailymotion.com/au', platform: 'Dailymotion' },
+                  'Sports': { link: 'https://tv.tflix.app/', platform: 'T-Flix' },
+                };
+                const currentLink = override?.link || defaultLinks[title]?.link || '';
+                const currentPlatform = override?.platform || defaultLinks[title]?.platform || title;
                 
                 return (
                   <div key={title} className="p-4 border rounded-lg bg-card space-y-3">
                     <div className="flex justify-between items-center">
-                      <h4 className="font-bold">{title}</h4>
+                      <div>
+                        <h4 className="font-bold text-base">{title}</h4>
+                        <p className="text-xs text-muted-foreground">{currentPlatform} • <span className="text-primary truncate">{currentLink}</span></p>
+                      </div>
                       <Button 
                         variant={isVisible ? "outline" : "secondary"} 
                         size="sm"
@@ -215,69 +227,104 @@ function EditorContent() {
                         {isVisible ? 'Hide' : 'Show'}
                       </Button>
                     </div>
-                    
-                    {isVisible && (
-                      <div className="space-y-3 mt-4">
-                        <p className="text-xs font-semibold uppercase text-muted-foreground">Featured Items</p>
-                        
-                        <div className="space-y-2">
-                          {(override?.customFeaturedContent || []).map((item, idx) => (
-                            <div key={idx} className="flex items-center justify-between bg-muted/50 p-2 rounded-md border border-border">
-                              <div className="overflow-hidden">
-                                <p className="font-semibold text-sm truncate">{item.title}</p>
-                                {item.url && <p className="text-xs text-muted-foreground truncate">{item.url}</p>}
-                              </div>
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="text-destructive h-8 px-2"
-                                onClick={() => {
-                                  const newContent = [...(override?.customFeaturedContent || [])];
-                                  newContent.splice(idx, 1);
-                                  updateState({
-                                    categoryOverrides: {
-                                      ...state.categoryOverrides,
-                                      [title]: {
-                                        ...override,
-                                        visible: isVisible,
-                                        customFeaturedContent: newContent.length > 0 ? newContent : undefined
-                                      }
-                                    }
-                                  });
-                                }}
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
 
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="w-full gap-2"
-                          onClick={() => {
-                            const newTitle = prompt(`Enter movie/show title for ${title}:`);
-                            if (!newTitle) return;
-                            const newUrl = prompt(`(Optional) Enter direct URL for ${newTitle}:`);
-                            
-                            const newContent = [...(override?.customFeaturedContent || [])];
-                            newContent.push({ title: newTitle.trim(), url: newUrl ? newUrl.trim() : undefined });
-                            
-                            updateState({
-                              categoryOverrides: {
-                                ...state.categoryOverrides,
-                                [title]: {
-                                  ...override,
-                                  visible: isVisible,
-                                  customFeaturedContent: newContent
-                                }
+                    {isVisible && (
+                      <div className="space-y-3 pt-2 border-t border-border">
+                        {/* Site URL Editor */}
+                        <div className="flex gap-2 items-center">
+                          <Input
+                            placeholder="Site URL (e.g. https://desicinemas.to/)"
+                            defaultValue={currentLink}
+                            id={`url-input-${title}`}
+                            className="text-xs h-9"
+                          />
+                          <Button 
+                            size="sm" 
+                            variant="secondary"
+                            onClick={() => {
+                              const input = document.getElementById(`url-input-${title}`) as HTMLInputElement;
+                              const newLink = input?.value.trim();
+                              if (newLink) {
+                                updateState({
+                                  categoryOverrides: {
+                                    ...state.categoryOverrides,
+                                    [title]: {
+                                      ...override,
+                                      visible: true,
+                                      link: newLink
+                                    }
+                                  }
+                                });
+                                toast({ title: "Updated Site URL", description: `Primary link for ${title} updated on TV.` });
                               }
-                            });
-                          }}
-                        >
-                          <Plus className="w-4 h-4" /> Add Item
-                        </Button>
+                            }}
+                          >
+                            Save Link
+                          </Button>
+                        </div>
+                        
+                        <div className="space-y-2 pt-2">
+                          <p className="text-xs font-semibold uppercase text-muted-foreground">Featured Content Links</p>
+                          
+                          <div className="space-y-2">
+                            {(override?.customFeaturedContent || []).map((item, idx) => (
+                              <div key={idx} className="flex items-center justify-between bg-muted/50 p-2 rounded-md border border-border">
+                                <div className="overflow-hidden">
+                                  <p className="font-semibold text-sm truncate">{item.title}</p>
+                                  {item.url && <p className="text-xs text-muted-foreground truncate">{item.url}</p>}
+                                </div>
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="text-destructive h-8 px-2"
+                                  onClick={() => {
+                                    const newContent = [...(override?.customFeaturedContent || [])];
+                                    newContent.splice(idx, 1);
+                                    updateState({
+                                      categoryOverrides: {
+                                        ...state.categoryOverrides,
+                                        [title]: {
+                                          ...override,
+                                          visible: isVisible,
+                                          customFeaturedContent: newContent.length > 0 ? newContent : undefined
+                                        }
+                                      }
+                                    });
+                                  }}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="w-full gap-2"
+                            onClick={() => {
+                              const newTitle = prompt(`Enter movie/show title for ${title}:`);
+                              if (!newTitle) return;
+                              const newUrl = prompt(`(Optional) Enter direct URL for ${newTitle}:`);
+                              
+                              const newContent = [...(override?.customFeaturedContent || [])];
+                              newContent.push({ title: newTitle.trim(), url: newUrl ? newUrl.trim() : undefined });
+                              
+                              updateState({
+                                categoryOverrides: {
+                                  ...state.categoryOverrides,
+                                  [title]: {
+                                    ...override,
+                                    visible: isVisible,
+                                    customFeaturedContent: newContent
+                                  }
+                                }
+                              });
+                            }}
+                          >
+                            <Plus className="w-4 h-4" /> Add Featured Link
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -289,22 +336,49 @@ function EditorContent() {
             <div className="space-y-4 pt-4 border-t border-border">
               <h3 className="text-lg font-headline font-bold">Custom Categories</h3>
               {state.customCategories.map(cat => (
-                <div key={cat.id} className="p-4 border rounded-lg flex justify-between items-center bg-card">
-                  <div>
-                    <p className="font-bold">{cat.title}</p>
-                    <p className="text-xs text-muted-foreground">{cat.platform}</p>
+                <div key={cat.id} className="p-4 border rounded-lg bg-card space-y-3">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="font-bold">{cat.title}</p>
+                      <p className="text-xs text-muted-foreground">{cat.platform} • <span className="text-primary truncate">{cat.link}</span></p>
+                    </div>
+                    <Button 
+                      variant="destructive" 
+                      size="icon"
+                      onClick={() => {
+                        updateState({
+                          customCategories: state.customCategories.filter(c => c.id !== cat.id)
+                        });
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
                   </div>
-                  <Button 
-                    variant="destructive" 
-                    size="icon"
-                    onClick={() => {
-                      updateState({
-                        customCategories: state.customCategories.filter(c => c.id !== cat.id)
-                      });
-                    }}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
+                  
+                  <div className="flex gap-2 items-center">
+                    <Input
+                      placeholder="Edit Site URL"
+                      defaultValue={cat.link}
+                      id={`custom-url-${cat.id}`}
+                      className="text-xs h-9"
+                    />
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => {
+                        const input = document.getElementById(`custom-url-${cat.id}`) as HTMLInputElement;
+                        const newLink = input?.value.trim();
+                        if (newLink) {
+                          updateState({
+                            customCategories: state.customCategories.map(c => c.id === cat.id ? { ...c, link: newLink } : c)
+                          });
+                          toast({ title: "Updated", description: `URL for ${cat.title} updated.` });
+                        }
+                      }}
+                    >
+                      Save URL
+                    </Button>
+                  </div>
                 </div>
               ))}
               <Button 
@@ -314,7 +388,7 @@ function EditorContent() {
                   const title = prompt("Category Title (e.g., Anime):");
                   if (!title) return;
                   const platform = prompt("Platform Name (e.g., Crunchyroll):");
-                  const link = prompt("URL:");
+                  const link = prompt("Site URL (e.g., https://crunchyroll.com):");
                   if (title && platform && link) {
                     updateState({
                       customCategories: [
@@ -325,13 +399,14 @@ function EditorContent() {
                           platform,
                           link,
                           icon: 'Film',
-                          featuredContent: [{title: 'Featured 1'}],
+                          featuredContent: [],
                           gradient: 'bg-gradient-to-br from-indigo-500/20 to-purple-500/20',
                           visible: true,
                           order: state.customCategories.length
                         }
                       ]
                     });
+                    toast({ title: "Added Category", description: `New category ${title} added to TV!` });
                   }
                 }}
               >

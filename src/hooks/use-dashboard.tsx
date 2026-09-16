@@ -98,10 +98,12 @@ export function DashboardProvider({
 
     const connect = () => {
       // Determine WebSocket URL
-      // If NEXT_PUBLIC_SYNC_HOST is provided, use it. Otherwise use localhost:1999
-      const host = process.env.NEXT_PUBLIC_SYNC_HOST || 'localhost:1999';
-      // Use wss:// for https (Netlify/Render), ws:// for localhost
-      const protocol = host.includes('localhost') || host.includes('127.0.0.1') ? 'ws://' : 'wss://';
+      // If NEXT_PUBLIC_SYNC_HOST is provided, use it. Otherwise use the current hostname (useful for local network IP)
+      const defaultHost = typeof window !== 'undefined' ? `${window.location.hostname}:1999` : 'localhost:1999';
+      const host = process.env.NEXT_PUBLIC_SYNC_HOST || defaultHost;
+      // Use wss:// for https (Netlify/Render), ws:// for localhost or local IPs
+      const isLocal = host.includes('localhost') || host.includes('127.0.0.1') || host.startsWith('192.168.') || host.startsWith('10.');
+      const protocol = isLocal ? 'ws://' : 'wss://';
       const wsUrl = `${protocol}${host}/?room=${pairCode}`;
 
       ws = new WebSocket(wsUrl);

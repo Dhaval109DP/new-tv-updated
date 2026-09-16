@@ -15,6 +15,8 @@ import { PlayDesiLogo } from '@/components/play-desi-logo';
 import { MessageBanner } from '@/components/widgets/MessageBanner';
 import { CountdownTimers } from '@/components/widgets/CountdownTimers';
 import { useDashboard } from '@/hooks/use-dashboard';
+import { useTvFocus } from '@/hooks/use-tv-focus';
+import { useSiteStatus } from '@/hooks/use-site-status';
 
 import { QuickNotes } from '@/components/widgets/QuickNotes';
 import { TaskList } from '@/components/widgets/TaskList';
@@ -80,9 +82,9 @@ const categories = [
     platform: "T-Flix",
     icon: Trophy,
     featuredContent: [
-      { title: "Live Cricket" },
-      { title: "Live Football" },
-      { title: "Other Sports" },
+      { title: "Live Cricket", url: "https://tv.tflix.app/" },
+      { title: "Live Football", url: "https://tv.tflix.app/" },
+      { title: "Other Sports", url: "https://tv.tflix.app/" },
     ],
     link: "https://tv.tflix.app/",
     gradient: "bg-gradient-to-br from-yellow-500/20 to-amber-500/20",
@@ -90,11 +92,29 @@ const categories = [
 ];
 
 const Index = () => {
-  const { state } = useDashboard();
+  const { state, updateState } = useDashboard();
   const { widgetVisibility } = state.settings;
+  const { getStatus } = useSiteStatus();
+  
+  useTvFocus();
+
+  const pinned = state.pinnedCategories || [];
+
+  const togglePin = (title: string) => {
+    const isPinned = pinned.includes(title);
+    const updated = isPinned ? pinned.filter(t => t !== title) : [...pinned, title];
+    updateState({ pinnedCategories: updated });
+  };
+
+  // Sort categories: pinned categories first
+  const sortedCategories = [...categories].sort((a, b) => {
+    const aPinned = pinned.includes(a.title) ? 1 : 0;
+    const bPinned = pinned.includes(b.title) ? 1 : 0;
+    return bPinned - aPinned;
+  });
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground tv-safe-area">
       <AppHeader />
       <Hero />
       <ContinueWatching />
@@ -110,17 +130,28 @@ const Index = () => {
       
       <section className="py-20 -mt-8 relative z-20">
         <div className="container mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-            {categories.map((category, index) => {
+          <div className="flex overflow-x-auto gap-6 pb-4 scrollbar-hide" data-tv-carousel>
+            {sortedCategories.map((category, index) => {
               // Apply overrides if any exist in state
               const override = state.categoryOverrides[category.title];
               if (override && override.visible === false) return null;
               
               const finalContent = override?.customFeaturedContent || category.featuredContent;
+              const finalLink = override?.link || category.link;
+              const finalPlatform = override?.platform || category.platform;
+              const isCategoryPinned = pinned.includes(category.title);
               
               return (
-                <div key={index} className="animate-scale-in will-change-transform" style={{ animationDelay: `${index * 0.1}s` }}>
-                  <CategoryCard {...category} featuredContent={finalContent} />
+                <div key={category.title} className="animate-scale-in will-change-transform min-w-[280px] md:min-w-[320px] shrink-0" style={{ animationDelay: `${index * 0.1}s` }}>
+                  <CategoryCard 
+                    {...category} 
+                    link={finalLink}
+                    platform={finalPlatform}
+                    featuredContent={finalContent} 
+                    siteStatus={getStatus(finalPlatform)}
+                    isPinned={isCategoryPinned}
+                    onTogglePin={() => togglePin(category.title)}
+                  />
                 </div>
               );
             })}
@@ -133,8 +164,10 @@ const Index = () => {
               else if (category.icon === 'Video') IconComp = Video;
               else if (category.icon === 'Trophy') IconComp = Trophy;
               
+              const isCategoryPinned = pinned.includes(category.title);
+
               return (
-                <div key={category.id} className="animate-scale-in will-change-transform" style={{ animationDelay: `${(categories.length + index) * 0.1}s` }}>
+                <div key={category.id} className="animate-scale-in will-change-transform min-w-[280px] md:min-w-[320px] shrink-0" style={{ animationDelay: `${(categories.length + index) * 0.1}s` }}>
                   <CategoryCard 
                     title={category.title}
                     platform={category.platform}
@@ -142,6 +175,9 @@ const Index = () => {
                     featuredContent={category.featuredContent}
                     link={category.link}
                     gradient={category.gradient}
+                    siteStatus={getStatus(category.platform)}
+                    isPinned={isCategoryPinned}
+                    onTogglePin={() => togglePin(category.title)}
                   />
                 </div>
               );

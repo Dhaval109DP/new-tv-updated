@@ -84,3 +84,62 @@
         scrollbar-width: none;
     }
 }
+
+/* ============================================
+   Android TV / D-pad Focus & Navigation Styles
+   ============================================ */
+@layer components {
+  /* Global focus-visible ring for all interactive elements */
+  a:focus-visible,
+  button:focus-visible,
+  [tabindex="0"]:focus-visible,
+  input:focus-visible,
+  textarea:focus-visible,
+  select:focus-visible {
+    outline: 3px solid hsl(var(--primary));
+    outline-offset: 4px;
+    box-shadow: 0 0 0 6px hsl(var(--primary) / 0.25),
+                0 0 20px 4px hsl(var(--primary) / 0.15);
+    border-radius: var(--radius);
+    transition: outline 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+    z-index: 50;
+    position: relative;
+  }
+
+  /* Cards and larger elements scale up on focus */
+  .tv-card-focus:focus-visible,
+  .tv-card-focus:focus-within {
+    transform: scale(1.05);
+    outline: 3px solid hsl(var(--primary));
+    outline-offset: 4px;
+    box-shadow: 0 0 0 6px hsl(var(--primary) / 0.25),
+                0 8px 32px hsl(var(--primary) / 0.2);
+    z-index: 50;
+    position: relative;
+  }
+
+  /* Poster-style items get a bright border glow */
+  .tv-poster-focus:focus-visible,
+  .tv-poster-focus:focus-within {
+    border-color: hsl(var(--primary)) !important;
+    box-shadow: 0 0 0 3px hsl(var(--primary) / 0.4),
+                0 0 24px 8px hsl(var(--primary) / 0.15);
+    transform: scale(1.08);
+    z-index: 50;
+  }
+
+  /* TV overscan safe area */
+  .tv-safe-area {
+    padding: 3vh 3vw;
+  }
+}
+
+@media (min-width: 1920px) {
+  body {
+    font-size: 1.125rem;
+  }
+  
+  .tv-safe-area {
+    padding: 5vh 5vw;
+  }
+}

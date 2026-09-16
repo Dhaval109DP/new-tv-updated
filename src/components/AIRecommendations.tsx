@@ -196,13 +196,7 @@ export function AIRecommendations() {
       }
     } catch (err) {
       console.error(err);
-      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred.';
-      setError('Failed to get recommendations. Please try again later.');
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: errorMessage,
-      });
+      setError('AI recommendations are currently unavailable. Use the search above to find content across all platforms.');
     } finally {
       setIsLoading(false);
     }
@@ -215,10 +209,10 @@ export function AIRecommendations() {
           <CardHeader>
             <div className="flex items-center gap-3">
               <Wand2 className="h-8 w-8 tv:h-10 tv:w-10 text-primary" />
-              <CardTitle className="text-3xl tv:text-4xl font-headline tracking-wide">AI Recommendations</CardTitle>
+              <CardTitle className="text-3xl tv:text-4xl font-headline tracking-wide">Find Your Next Binge</CardTitle>
             </div>
             <CardDescription className="text-lg tv:text-xl !mt-2">
-              Tell us what you've watched, and we'll suggest what to watch next!
+              Start typing to search across 200+ movies and shows, or let AI suggest what to watch next.
             </CardDescription>
           </CardHeader>
           <CardContent>

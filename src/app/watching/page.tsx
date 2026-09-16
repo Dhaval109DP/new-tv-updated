@@ -9,7 +9,7 @@ import { DesiCinemasLogo } from '@/components/desi-cinemas-logo';
 import { PlayDesiLogo } from '@/components/play-desi-logo';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Home } from 'lucide-react';
+import { Home, Monitor } from 'lucide-react';
 
 interface Platform {
   name: string;
@@ -65,10 +65,11 @@ export default function WatchingPage() {
         return <HeroSection lastVisited={lastVisited} />;
     }
     return (
-        <div className="flex-1 flex items-center justify-center text-center">
-            <div className="max-w-xl">
-                <h1 className="text-2xl md:text-3xl font-semibold text-foreground/90 mb-4">You haven't watched anything yet.</h1>
-                <p className="text-lg text-muted-foreground mb-8">Go back home to select a platform to watch.</p>
+        <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+            <div className="max-w-2xl flex flex-col items-center">
+                <Monitor className="w-24 h-24 text-muted-foreground/50 mb-6" />
+                <h1 className="text-3xl md:text-4xl font-semibold text-foreground/90 mb-4">You haven't watched anything yet.</h1>
+                <p className="text-xl text-muted-foreground mb-8">Go back home to select a platform to watch.</p>
                 <Button asChild size="lg">
                     <Link href="/">
                         <Home className="mr-2 h-5 w-5" /> Go to Home
@@ -82,7 +83,7 @@ export default function WatchingPage() {
   return (
     <div className="bg-background selection:bg-primary selection:text-primary-foreground">
       <AppHeader />
-      <main className="flex min-h-screen flex-col">
+      <main className="flex min-h-screen flex-col pt-24">
         {renderContent()}
       </main>
     </div>

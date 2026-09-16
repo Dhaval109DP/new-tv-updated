@@ -10,14 +10,14 @@ export function Clock() {
     const updateClock = () => {
       const now = new Date();
       setTime(
-        now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: true })
+        now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true })
       );
       setDate(
         now.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
       );
     };
     updateClock();
-    const timerId = setInterval(updateClock, 1000 * 60); // Update every minute
+    const timerId = setInterval(updateClock, 1000); // Update every second
     return () => clearInterval(timerId);
   }, []);
 
@@ -26,7 +26,7 @@ export function Clock() {
   }
 
   return (
-    <div className="flex items-baseline gap-4 text-xl font-medium text-foreground/80">
+    <div className="flex items-baseline gap-4 text-xl tv:text-2xl font-medium text-foreground/80">
       <span>{date}</span>
       <span>{time}</span>
     </div>

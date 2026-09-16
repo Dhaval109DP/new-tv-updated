@@ -48,6 +48,10 @@ export interface DashboardState {
 
   // --- Casted Links (phone → TV clickable links) ---
   castedLinks: CastedLink[];
+
+  // --- Category ordering & pinning ---
+  categoryOrder: string[];
+  pinnedCategories: string[];
 }
 
 // --- Sub-types ---
@@ -135,6 +139,8 @@ export interface Announcement {
 
 export interface CategoryOverride {
   visible: boolean;
+  link?: string;
+  platform?: string;
   customFeaturedContent?: { title: string; url?: string }[];
 }
 
@@ -210,6 +216,8 @@ export const DEFAULT_DASHBOARD_STATE: DashboardState = {
   aiData: null,
   customCategories: [],
   castedLinks: [],
+  categoryOrder: ['Movies', 'TV Shows', 'Web Series', 'Videos', 'Sports'],
+  pinnedCategories: [],
   settings: {
     theme: 'dark',
     accentColor: '#E63946',

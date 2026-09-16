@@ -19,5 +19,5 @@ console.log(`[Genkit] ${apiKeys.length} API key(s) loaded. Using key #${apiKeys.
 
 export const ai = genkit({
   plugins: [googleAI({ apiKey: selectedKey })],
-  model: 'googleai/gemini-2.0-flash',
+  model: 'googleai/gemini-3.6-flash',
 });
