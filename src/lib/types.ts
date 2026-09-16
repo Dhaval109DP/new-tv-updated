@@ -156,6 +156,7 @@ export interface TrendingShow {
 export interface DashboardSettings {
   theme: 'dark' | 'light';
   accentColor: string;
+  customBackgroundImage?: string | null;
   widgetVisibility: {
     notes: boolean;
     tasks: boolean;

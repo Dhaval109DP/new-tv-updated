@@ -15,10 +15,20 @@ interface PosterCardProps {
 export function PosterCard({ href, imageUrl, name, imageHint, priority = false }: PosterCardProps) {
     const [error, setError] = useState(false);
 
+    const isValidUrl = (url: string) => {
+        if (!url || typeof url !== 'string') return false;
+        try {
+            new URL(url);
+            return true;
+        } catch {
+            return false;
+        }
+    };
+
     return (
         <Link href={href} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 group tv-poster-focus">
             <div className="w-40 tv:w-52 aspect-[2/3] rounded-lg overflow-hidden transition-all duration-300 ease-in-out group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-primary/20 border-2 border-transparent group-hover:border-primary/80 relative bg-muted">
-                {!error ? (
+                {!error && isValidUrl(imageUrl) ? (
                     <Image
                         src={imageUrl}
                         alt={`Poster for ${name}`}

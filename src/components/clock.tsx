@@ -26,9 +26,9 @@ export function Clock() {
   }
 
   return (
-    <div className="flex items-baseline gap-4 text-xl tv:text-2xl font-medium text-foreground/80">
-      <span>{date}</span>
+    <div className="flex flex-col items-end text-sm tv:text-base font-medium text-foreground/80 leading-tight">
       <span>{time}</span>
+      <span className="text-xs text-muted-foreground">{date}</span>
     </div>
   );
 }

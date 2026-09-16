@@ -1,12 +1,8 @@
 'use client';
 
 import { AppHeader } from '@/components/header';
-import { Hero } from '@/components/Hero';
-import { ContinueWatching } from '@/components/ContinueWatching';
 import { CategoryCard } from '@/components/CategoryCard';
 import { TrendingSection } from '@/components/TrendingSection';
-import { AIRecommendations } from '@/components/AIRecommendations';
-import { Archives } from '@/components/Archives';
 import { Film, Tv, MonitorPlay, Video, Trophy } from "lucide-react";
 import { DailymotionLogo } from '@/components/dailymotion-logo';
 import { BollyzoneLogo } from '@/components/bollyzone-logo';
@@ -114,23 +110,30 @@ const Index = () => {
   });
 
   return (
-    <div className="min-h-screen bg-background text-foreground tv-safe-area">
-      <AppHeader />
-      <Hero />
-      <ContinueWatching />
-      
-      {widgetVisibility.announcements && <MessageBanner />}
-      
-      {/* New Widgets */}
-      {widgetVisibility.quickLinks && <BookmarkBar />}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 container mx-auto">
-        {widgetVisibility.tasks && <TaskList />}
-        {widgetVisibility.notes && <QuickNotes />}
-      </div>
-      
-      <section className="py-20 -mt-8 relative z-20">
-        <div className="container mx-auto px-6">
-          <div className="flex overflow-x-auto gap-6 pb-4 scrollbar-hide" data-tv-carousel>
+    <div 
+      className="min-h-screen bg-background text-foreground tv-safe-area flex flex-col justify-between"
+      style={state.settings.customBackgroundImage ? {
+        backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,0.9)), url(${state.settings.customBackgroundImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
+      } : {}}
+    >
+      <div className="flex-1 overflow-hidden flex flex-col gap-4 pt-20">
+        <AppHeader />
+        
+        {widgetVisibility.announcements && <MessageBanner />}
+        
+        {/* New Widgets */}
+        {widgetVisibility.quickLinks && <BookmarkBar />}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 container mx-auto px-6">
+          {widgetVisibility.tasks && <TaskList />}
+          {widgetVisibility.notes && <QuickNotes />}
+        </div>
+        
+        <section className="relative z-20 mt-4">
+          <div className="container mx-auto px-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pb-2" data-tv-carousel>
             {sortedCategories.map((category, index) => {
               // Apply overrides if any exist in state
               const override = state.categoryOverrides[category.title];
@@ -142,7 +145,7 @@ const Index = () => {
               const isCategoryPinned = pinned.includes(category.title);
               
               return (
-                <div key={category.title} className="animate-scale-in will-change-transform min-w-[280px] md:min-w-[320px] shrink-0" style={{ animationDelay: `${index * 0.1}s` }}>
+                <div key={category.title} className="animate-scale-in will-change-transform" style={{ animationDelay: `${index * 0.1}s` }}>
                   <CategoryCard 
                     {...category} 
                     link={finalLink}
@@ -167,7 +170,7 @@ const Index = () => {
               const isCategoryPinned = pinned.includes(category.title);
 
               return (
-                <div key={category.id} className="animate-scale-in will-change-transform min-w-[280px] md:min-w-[320px] shrink-0" style={{ animationDelay: `${(categories.length + index) * 0.1}s` }}>
+                <div key={category.id} className="animate-scale-in will-change-transform" style={{ animationDelay: `${(categories.length + index) * 0.1}s` }}>
                   <CategoryCard 
                     title={category.title}
                     platform={category.platform}
@@ -186,22 +189,12 @@ const Index = () => {
         </div>
       </section>
 
-      {widgetVisibility.trending && <TrendingSection />}
-      {widgetVisibility.aiRecommendations && <AIRecommendations />}
-      <div className="container mx-auto px-6 mt-6 relative z-30">
-        <CastedLinksWidget />
-      </div>
-      {widgetVisibility.archives && <Archives />}
-
-      <footer className="py-12 border-t border-border/50 bg-background/50 backdrop-blur-sm">
-        <div className="container mx-auto px-6 text-center">
-          <p className="text-muted-foreground">
-            Your gateway to premium Desi entertainment
-          </p>
+        {widgetVisibility.trending && <TrendingSection />}
+        <div className="container mx-auto px-6 relative z-30">
+          <CastedLinksWidget />
         </div>
-      </footer>
-
-      {widgetVisibility.timers && <CountdownTimers />}
+        {widgetVisibility.timers && <CountdownTimers />}
+      </div>
     </div>
   );
 };

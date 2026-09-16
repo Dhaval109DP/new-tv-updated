@@ -90,9 +90,10 @@ function EditorContent() {
       {/* Main Content */}
       <main className="flex-1 p-4 pb-24">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-6">
+          <TabsList className="grid w-full grid-cols-4 mb-6">
             <TabsTrigger value="dashboard">Dash</TabsTrigger>
             <TabsTrigger value="categories">Categories</TabsTrigger>
+            <TabsTrigger value="trending">Trending</TabsTrigger>
             <TabsTrigger value="ai">AI</TabsTrigger>
           </TabsList>
           
@@ -181,6 +182,76 @@ function EditorContent() {
               >
                 Start Timer
               </Button>
+            </div>
+
+            {/* Custom Background Settings */}
+            <div className="mt-8 pt-6 border-t border-border">
+              <h3 className="text-lg font-headline font-bold mb-4">TV Background</h3>
+              <div className="space-y-3">
+                <div className="flex gap-2 items-center">
+                  <Input 
+                    id="bg-image-input"
+                    placeholder="Image URL (e.g. https://imgur.com/...)" 
+                    defaultValue={state.settings.customBackgroundImage || ''}
+                    className="flex-1"
+                  />
+                  <Button 
+                    onClick={() => {
+                      const input = document.getElementById('bg-image-input') as HTMLInputElement;
+                      const url = input?.value.trim();
+                      updateState({
+                        settings: {
+                          ...state.settings,
+                          customBackgroundImage: url || null
+                        }
+                      });
+                      toast({ title: 'Saved', description: 'Background image updated on TV.' });
+                    }}
+                  >
+                    Save
+                  </Button>
+                </div>
+                {state.settings.customBackgroundImage && (
+                   <Button variant="destructive" size="sm" className="w-full" onClick={() => {
+                     const input = document.getElementById('bg-image-input') as HTMLInputElement;
+                     if(input) input.value = '';
+                     updateState({ settings: { ...state.settings, customBackgroundImage: null } });
+                   }}>
+                     Remove Custom Background
+                   </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Widget Visibility Settings */}
+            <div className="mt-8 pt-6 border-t border-border">
+              <h3 className="text-lg font-headline font-bold mb-4">Widget Visibility</h3>
+              <p className="text-sm text-muted-foreground mb-4">Toggle which sections are visible on the TV homepage.</p>
+              <div className="grid grid-cols-2 gap-3">
+                {Object.keys(state.settings.widgetVisibility).map((widgetKey) => {
+                  const isVisible = state.settings.widgetVisibility[widgetKey as keyof typeof state.settings.widgetVisibility];
+                  return (
+                    <Button 
+                      key={widgetKey}
+                      variant={isVisible ? "default" : "outline"}
+                      className="justify-start truncate"
+                      onClick={() => {
+                        updateState({
+                          settings: {
+                            ...state.settings,
+                            widgetVisibility: {
+                              ...state.settings.widgetVisibility,
+                              [widgetKey]: !isVisible
+                            }
+                          }
+                        });
+                      }}
+                    >
+                      {isVisible ? 'Hide' : 'Show'} {widgetKey.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
+                    </Button>
+                  );
+                })}
+              </div>
             </div>
           </TabsContent>
           
@@ -411,6 +482,100 @@ function EditorContent() {
                 }}
               >
                 <Plus className="w-4 h-4" /> Add Custom Category
+              </Button>
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="trending" className="space-y-6">
+            <div className="space-y-4">
+              <h3 className="text-lg font-headline font-bold">Trending Shows</h3>
+              <p className="text-sm text-muted-foreground">Manage the shows that appear in the Trending Now carousel. These override the default list.</p>
+              
+              <div className="space-y-4">
+                {(state.customTrendingShows || []).map((show, idx) => (
+                  <div key={show.id} className="p-4 border rounded-lg bg-card space-y-3 relative">
+                    <Button 
+                      variant="destructive" 
+                      size="icon"
+                      className="absolute top-2 right-2 w-8 h-8"
+                      onClick={() => {
+                        const newShows = [...state.customTrendingShows];
+                        newShows.splice(idx, 1);
+                        updateState({ customTrendingShows: newShows });
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                    <div className="font-bold pr-8">{show.name}</div>
+                    
+                    <div className="space-y-2">
+                      <div>
+                        <span className="text-xs text-muted-foreground">URL</span>
+                        <Input 
+                          defaultValue={show.href}
+                          onBlur={(e) => {
+                            const newShows = [...state.customTrendingShows];
+                            newShows[idx].href = e.target.value;
+                            updateState({ customTrendingShows: newShows });
+                          }}
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground">Poster Image URL</span>
+                        <Input 
+                          defaultValue={show.imageUrl}
+                          onBlur={(e) => {
+                            const newShows = [...state.customTrendingShows];
+                            newShows[idx].imageUrl = e.target.value;
+                            updateState({ customTrendingShows: newShows });
+                          }}
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <span className="text-xs text-muted-foreground">Description/Hint</span>
+                        <Input 
+                          defaultValue={show.imageHint}
+                          onBlur={(e) => {
+                            const newShows = [...state.customTrendingShows];
+                            newShows[idx].imageHint = e.target.value;
+                            updateState({ customTrendingShows: newShows });
+                          }}
+                          className="h-8 text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <Button 
+                className="w-full gap-2 mt-4" 
+                variant="outline"
+                onClick={() => {
+                  const name = prompt("Show Name:");
+                  if (!name) return;
+                  const href = prompt("Link URL (e.g. https://playdesi.info/...):") || '';
+                  const imageUrl = prompt("Poster Image URL:") || '';
+                  const imageHint = prompt("Short genre/description (e.g. comedy drama):") || '';
+                  
+                  updateState({
+                    customTrendingShows: [
+                      ...(state.customTrendingShows || []),
+                      {
+                        id: Date.now().toString(),
+                        name,
+                        href,
+                        imageUrl,
+                        imageHint,
+                        order: (state.customTrendingShows || []).length
+                      }
+                    ]
+                  });
+                }}
+              >
+                <Plus className="w-4 h-4" /> Add Trending Show
               </Button>
             </div>
           </TabsContent>

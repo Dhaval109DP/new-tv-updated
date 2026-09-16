@@ -134,6 +134,20 @@ export function AIRecommendations() {
     }
   };
 
+  const handleSaveQuickLink = (platform: string, term: string, url: string) => {
+    const newLink = {
+      id: Date.now().toString(),
+      title: `${term} on ${platform}`,
+      url: url,
+      order: state.quickLinks ? state.quickLinks.length : 0
+    };
+    updateState({ quickLinks: [...(state.quickLinks || []), newLink] });
+    toast({
+      title: 'Bookmark Created',
+      description: `Added "${term}" on ${platform} to your Quick Links.`,
+    });
+  };
+
   const handleRemoveSearch = (termToRemove: string) => {
     const newSavedSearches = savedSearches.filter(term => term !== termToRemove);
     updateState({ savedSearches: newSavedSearches });
@@ -269,31 +283,60 @@ export function AIRecommendations() {
                       <Button size="icon" variant="outline" title={`Save "${currentQuery.trim()}"`} onClick={handleSaveSearch}>
                           <Bookmark className="h-4 w-4" />
                       </Button>
-                      <Button asChild size="icon" variant="outline" title={`Play on Desi Cinemas`}>
-                          <Link href={platformLinkGenerators['Desi Cinemas'](currentQuery)} target="_blank" rel="noopener noreferrer">
-                              <Film className="h-4 w-4" />
-                          </Link>
-                      </Button>
-                      <Button asChild size="icon" variant="outline" title={`Play on Bollyzone`}>
-                          <Link href={platformLinkGenerators['Bollyzone'](currentQuery)} target="_blank" rel="noopener noreferrer">
-                              <Tv className="h-4 w-4" />
-                          </Link>
-                      </Button>
-                      <Button asChild size="icon" variant="outline" title={`Play on Play Desi!`}>
-                          <Link href={platformLinkGenerators['Play Desi!'](currentQuery)} target="_blank" rel="noopener noreferrer">
-                              <ListVideo className="h-4 w-4" />
-                          </Link>
-                      </Button>
-                       <Button asChild size="icon" variant="outline" title={`Watch on Dailymotion`}>
-                          <Link href={platformLinkGenerators['Dailymotion'](currentQuery)} target="_blank" rel="noopener noreferrer">
-                              <Video className="h-4 w-4" />
-                          </Link>
-                      </Button>
-                       <Button asChild size="icon" variant="outline" title={`Watch on T-Flix`}>
-                          <Link href={platformLinkGenerators['T-Flix'](currentQuery)} target="_blank" rel="noopener noreferrer">
-                              <Trophy className="h-4 w-4" />
-                          </Link>
-                      </Button>
+                      <div className="flex items-center bg-white/5 border border-white/10 rounded-md overflow-hidden">
+                        <Button asChild variant="ghost" size="icon" title={`Play on Desi Cinemas`} className="rounded-none hover:bg-white/10">
+                            <Link href={platformLinkGenerators['Desi Cinemas'](currentQuery)} target="_blank" rel="noopener noreferrer">
+                                <Film className="h-4 w-4" />
+                            </Link>
+                        </Button>
+                        <Button variant="ghost" size="icon" title="Save as Quick Link" className="rounded-none hover:bg-white/10 opacity-50 hover:opacity-100" onClick={(e) => { e.preventDefault(); handleSaveQuickLink('Desi Cinemas', currentQuery, platformLinkGenerators['Desi Cinemas'](currentQuery)); }}>
+                            <Bookmark className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      
+                      <div className="flex items-center bg-white/5 border border-white/10 rounded-md overflow-hidden">
+                        <Button asChild variant="ghost" size="icon" title={`Play on Bollyzone`} className="rounded-none hover:bg-white/10">
+                            <Link href={platformLinkGenerators['Bollyzone'](currentQuery)} target="_blank" rel="noopener noreferrer">
+                                <Tv className="h-4 w-4" />
+                            </Link>
+                        </Button>
+                        <Button variant="ghost" size="icon" title="Save as Quick Link" className="rounded-none hover:bg-white/10 opacity-50 hover:opacity-100" onClick={(e) => { e.preventDefault(); handleSaveQuickLink('Bollyzone', currentQuery, platformLinkGenerators['Bollyzone'](currentQuery)); }}>
+                            <Bookmark className="h-3 w-3" />
+                        </Button>
+                      </div>
+
+                      <div className="flex items-center bg-white/5 border border-white/10 rounded-md overflow-hidden">
+                        <Button asChild variant="ghost" size="icon" title={`Play on Play Desi!`} className="rounded-none hover:bg-white/10">
+                            <Link href={platformLinkGenerators['Play Desi!'](currentQuery)} target="_blank" rel="noopener noreferrer">
+                                <ListVideo className="h-4 w-4" />
+                            </Link>
+                        </Button>
+                        <Button variant="ghost" size="icon" title="Save as Quick Link" className="rounded-none hover:bg-white/10 opacity-50 hover:opacity-100" onClick={(e) => { e.preventDefault(); handleSaveQuickLink('Play Desi!', currentQuery, platformLinkGenerators['Play Desi!'](currentQuery)); }}>
+                            <Bookmark className="h-3 w-3" />
+                        </Button>
+                      </div>
+
+                      <div className="flex items-center bg-white/5 border border-white/10 rounded-md overflow-hidden">
+                         <Button asChild variant="ghost" size="icon" title={`Watch on Dailymotion`} className="rounded-none hover:bg-white/10">
+                            <Link href={platformLinkGenerators['Dailymotion'](currentQuery)} target="_blank" rel="noopener noreferrer">
+                                <Video className="h-4 w-4" />
+                            </Link>
+                        </Button>
+                        <Button variant="ghost" size="icon" title="Save as Quick Link" className="rounded-none hover:bg-white/10 opacity-50 hover:opacity-100" onClick={(e) => { e.preventDefault(); handleSaveQuickLink('Dailymotion', currentQuery, platformLinkGenerators['Dailymotion'](currentQuery)); }}>
+                            <Bookmark className="h-3 w-3" />
+                        </Button>
+                      </div>
+
+                      <div className="flex items-center bg-white/5 border border-white/10 rounded-md overflow-hidden">
+                         <Button asChild variant="ghost" size="icon" title={`Watch on T-Flix`} className="rounded-none hover:bg-white/10">
+                            <Link href={platformLinkGenerators['T-Flix'](currentQuery)} target="_blank" rel="noopener noreferrer">
+                                <Trophy className="h-4 w-4" />
+                            </Link>
+                        </Button>
+                        <Button variant="ghost" size="icon" title="Save as Quick Link" className="rounded-none hover:bg-white/10 opacity-50 hover:opacity-100" onClick={(e) => { e.preventDefault(); handleSaveQuickLink('T-Flix', currentQuery, platformLinkGenerators['T-Flix'](currentQuery)); }}>
+                            <Bookmark className="h-3 w-3" />
+                        </Button>
+                      </div>
                   </div>
                 )}
               </div>
